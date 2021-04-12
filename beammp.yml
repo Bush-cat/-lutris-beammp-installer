@@ -1,0 +1,71 @@
+files:
+- dx2010: https://lutris.net/files/tools/directx-2010.tar.gz
+- beammp_launcher: https://beammp.com/builds/launcher?download=true
+- proton_launcher: https://github.com/rockerbacon/lutris-skyrimse-installers/releases/download/2.6.2-runners/proton-launcher.sh
+
+game:
+  exe: $HOME/.steam/steam/steamapps/common/BeamNG.drive/launcher.exe
+  prefix: $HOME/.steam/steam/steamapps/compatdata/284160/pfx
+installer:
+- input_menu:
+    description: "Do you play this game through Steam Play (Proton)?\n\nIf yes,\
+      \ ensure the following before continuing:\n    * The game was run at least\
+      \ once on Steam\n    * The game is configured to use Proton 5.13 On Steam: right\
+      \ click the game > Properties > tab \"General\" > Force the use of a specific\
+      \ Steam Play compatibility tool"
+    id: RUNNER
+    options:
+    - proton: Yes, I use Steam Play and everything is set up
+    - wine: No, I use pure Wine (in development)
+    preselect: proton
+- copy:
+    dst: $HOME/.local/share/beammp/proton-launcher.sh
+    src: proton_launcher
+- chmodx: $HOME/.local/share/beammp/proton-launcher.sh
+- execute:
+    file: $GAMEDIR/config_scripts/vortex-symlinks.sh
+- copy:
+    dst: $HOME/.steam/steam/steamapps/common/BeamNG.drive/launcher.exe
+    src: beammp_launcher
+- chmodx: $HOME/.steam/steam/steamapps/common/BeamNG.drive/launcher.exe
+- task:
+    arch: win64
+    executable: $setup
+    name: wineexec
+    prefix: $HOME/.steam/steam/steamapps/compatdata/284160/pfx
+- extract:
+    dst: $CACHE/dxsetup
+    file: dx2010
+- task:
+    arch: win64
+    args: /silent
+    executable: $CACHE/dxsetup/DXSETUP.exe
+    name: wineexec
+    prefix: $HOME/.steam/steam/steamapps/compatdata/284160/pfx
+- task:
+    app: corefonts vcrun2015 vcrun2019 win7
+    arch: win64
+    description: Installing vcredist
+    name: winetricks
+    prefix: $HOME/.steam/steam/steamapps/compatdata/284160/pfx
+- execute:
+    command: "# clear envs set by Lutris\nexport LD_LIBRARY_PATH= game_appid=284160 appid=284160 game_steam_subdirectory=BeamNG.drive\"\"\n\
+      runner=$INPUT_RUNNER\n
+      \n\ncase \"$runner\" in\n    proton)\n \
+      \n        game_prefix=\"\
+      $HOME/.steam/steam/steamapps/compatdata/284160/pfx\"\n        game_installation=\"\
+      $HOME/.steam/steam/steamapps/common/BeamNG.drive\"\n        
+      \\\n        \"#!/bin/bash\\n\\n'$shared/proton-launcher.sh'\
+      \ --proton-wine --winever 5.* --protonver 5.13 \\\"\\$@\\\" 284160 '$HOME/.steam/steam/steamapps/common/BeamNG.drive/launcher.exe'\"\
+      \ \\\n        > \"$GAMEDIR/run.sh\"\n\n        echo -e \\\n        \"#!/bin/bash\\\
+      n\\n'$shared/proton-launcher.sh' --proton-wine --winever 5.* --protonver 5.13 284160\
+      \        if [ -z \"$game_prefix\" ]; then\n            echo \"ERROR: Installation\
+      $game_prefix/drive_c/Program Files (x86)/Steam/steamapps/common/BeamNG.drive\n"\
+    env:
+      CACHE: $CACHE
+      GAMEDIR: $GAMEDIR
+system:
+  env:
+    DXVK_HUD: 0
+wine:
+  dxvk: true
